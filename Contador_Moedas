@@ -1,0 +1,175 @@
+//FALTA FAZER A CONTA DOS PIXELS E COLOCAR AS LINAHS NO DISPLAY
+//ARRANJAR MAIS COISA PRA FAZER AQUI
+
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128  // Largura do display OLED, em pixels
+#define SCREEN_HEIGHT 64  // Altura do display OLED, em pixels
+
+// Defina o pino de reset (RST) como -1 se estiver usando o pino de reset compartilhado com o Arduino
+#define OLED_RESET -1        // Pino de reset do OLED (ou -1 se não estiver conectado)
+#define SCREEN_ADDRESS 0x3C  ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Pinos dos botões
+const int button1Pin = 2;  // Botão de R$1,00
+const int button2Pin = 3;  // Botão de R$0,50
+const int button3Pin = 4;  // Botão de R$0,25
+const int button4Pin = 5;  // Botão de R$0,10
+const int button5Pin = 6;  // Botão de R$0,05
+
+//Pinos dos LEDS
+const int led_umreal = 8;
+const int led_cinquentacent = 9;
+const int led_vintecincocent = 10;
+
+//BOTÃO DISPLAY
+const int button_button = 11;
+
+//QUANTIDADES DE MOEDAS;
+
+int qtd_umreal = 0;
+int qtd_cinquenta = 0;
+int qtd_vintecinco = 0;
+int qtd_dez = 0;
+int qtd_cinco = 0;
+
+// Variável para armazenar o valor total
+float totalValue = 0.00;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Define os pinos dos botões como entrada com resistor de pull-up interno
+
+  for (uint8_t i = 2; i <= 6; i++) {
+    pinMode(i, INPUT_PULLUP);
+  }
+
+  pinMode(button_button, INPUT);
+  pinMode(led_umreal, OUTPUT);
+  pinMode(led_cinquentacent, OUTPUT);
+  pinMode(led_vintecincocent, OUTPUT);
+
+
+  // Inicializa o display OLED
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;  // Não continue se o display não inicializar
+  }
+
+  // Início do DisplayOLED
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 1);
+  display.display();
+}
+
+void loop() {
+
+  //Serial.println(digitalRead(button1Pin) );
+  //Serial.println(digitalRead(button2Pin) );
+  //Serial.println(digitalRead(button3Pin) );
+  //Serial.println(digitalRead(button4Pin) );
+  //Serial.println(digitalRead(button5Pin) );
+
+  // Verifica se algum botão foi pressionado
+  if (digitalRead(button1Pin) == HIGH) {
+    Serial.println("Caiu 1 real");
+    totalValue += 1.00;
+    qtd_umreal++;
+    atualizaDisplay();
+    delay(200);  // Delay para evitar leituras múltiplas do mesmo pressionamento
+    digitalWrite(led_umreal, HIGH);
+    delay(200);
+    digitalWrite(led_umreal, LOW);
+  }
+  if (digitalRead(button2Pin) == HIGH) {
+    Serial.println("Caiu 0,50");
+    totalValue += 0.50;
+    qtd_cinquenta++;
+    atualizaDisplay();
+    delay(200);
+    digitalWrite(led_cinquentacent, HIGH);
+    delay(200);
+    digitalWrite(led_cinquentacent, LOW);
+  }
+  if (digitalRead(button3Pin) == HIGH) {
+    Serial.println("Caiu 0,25");
+    totalValue += 0.25;
+    qtd_vintecinco++;
+    atualizaDisplay();
+    delay(200);
+    digitalWrite(led_vintecincocent, HIGH);
+    delay(200);
+    digitalWrite(led_vintecincocent, LOW);
+  }
+  if (digitalRead(button4Pin) == LOW) {
+    Serial.println("Caiu 0,10");
+    totalValue += 0.10;
+    atualizaDisplay();
+    delay(200);
+  }
+  if (digitalRead(button5Pin) == LOW) {
+    Serial.println("Caiu 0,05");
+    totalValue += 0.05;
+    atualizaDisplay();
+    delay(200);
+  }
+
+  if (digitalRead(button_button) == HIGH) {
+    show_tabela();
+  } else {
+
+    atualizaDisplay();
+  }
+}
+
+void show_tabela() {
+
+  //TABELA PARA VALORES
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.print("R$: 0.05");
+  display.setCursor(0, 14);
+  display.print("R$: 0.10");
+  display.setCursor(0, 28);
+  display.print("R$: 0.25");
+  display.setCursor(0, 42);
+  display.print("R$: 0.50");
+  display.setCursor(0, 56);
+  display.print("R$: 1.00");
+
+  //TABELA QUANTIDADES;
+  display.setCursor(64,0);
+  display.print(qtd_umreal);
+  display.setCursor(64,14);
+  display.print(qtd_cinquenta);
+  display.setCursor(64,28);
+  display.print(qtd_vintecinco);
+  display.setCursor(64,42);
+  display.print(qtd_dez);
+  display.setCursor(64,56);
+  display.print(qtd_cinco);
+  display.display();
+}
+
+void atualizaDisplay() {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(32,0);
+  display.println(F("Total:"));
+  display.setCursor(30,42);
+  display.print(F("R$"));
+  display.print(totalValue, 2);  // Mostra o valor com 2 casas decimais
+  display.display();
+}
