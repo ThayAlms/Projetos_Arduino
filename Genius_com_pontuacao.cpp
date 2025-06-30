@@ -5,7 +5,13 @@ const int ledPins[3] = {2, 3, 4};
 const int buttonPins[3] = {5, 6, 7};
 
 // Pinos ligados as entradas A, B, C, D do CI 4511
-const int bcdPins[4] = {8, 9, 10, 11}; // A = 8, B = 9, C = 10, D = 11
+const int bcdPins[4] = {12, 9, 10, 11}; // A = 8, B = 9, C = 10, D = 11
+
+
+// Pino do buzzer
+const int buzzerPin = 8;
+// Frequências para cada LED (notas musicais)
+const int tones[3] = {262, 294, 330}; // C4, D4, E4
 
 // Tamanho maximo da sequencia
 const int maxSequence = 9; 
@@ -41,6 +47,7 @@ void setup() {
 }
 
 void loop() {
+  delay(1000);
   showSequence();
 
   playerTurn = true;
@@ -58,6 +65,17 @@ void loop() {
   }
 }
 
+// void loop() {
+//   for (int i = 0; i < 3; i++) {
+//     if (digitalRead(buttonPins[i]) == HIGH) {
+//       Serial.print("Botão pressionado: ");
+//       Serial.println(i);
+//       // delay(100); // para evitar múltiplas leituras
+//     }
+//   }
+// }
+
+
 void generateSequence() {
   for (int i = 0; i < maxSequence; i++) {
     sequence[i] = random(0, 3); // número entre 0 e 2
@@ -68,8 +86,10 @@ void showSequence() {
   for (int i = 0; i < sequenceLength; i++) {
     int led = sequence[i];
     digitalWrite(ledPins[led], HIGH);
-    delay(500);
+    tone(buzzerPin, tones[led]);
+    delay(400);
     digitalWrite(ledPins[led], LOW);
+    noTone(buzzerPin);
     delay(250);
   }
 }
@@ -78,7 +98,10 @@ bool getPlayerInput() {
   Serial.println("getPlayerInput");
   for (int i = 0; i < sequenceLength; i++) {
     int input = waitForButton();
-    Serial.println("botão pressionado");
+    Serial.print("Esperado: ");
+    Serial.print(sequence[i]);
+    Serial.print(" | Recebido: ");
+    Serial.println(input);
     if (input != sequence[i]) {
       return false;
     }
@@ -86,20 +109,20 @@ bool getPlayerInput() {
   return true;
 }
 
+
 int waitForButton() {
   while (true) {
-    // Serial.println("waitForButton");
     for (int i = 0; i < 3; i++) {
-      //  Serial.print(i);
-      //  Serial.print(" :");
-      // Serial.println(digitalRead(buttonPins[i]));
       if (digitalRead(buttonPins[i]) == HIGH) {
-        Serial.println("A");
-        flashLED(i);
-        while (digitalRead(buttonPins[i]) == HIGH); // espera soltar
-        delay(100); // debounce
-        Serial.print("SAIUUUU");
-        return i;
+        delay(20); // pequeno delay para debounce
+        if (digitalRead(buttonPins[i]) == HIGH) { // confirma que ainda está pressionado
+          flashLED(i);
+          while (digitalRead(buttonPins[i]) == HIGH) {
+            delay(10); // espera soltar, evita loop travado
+          }
+          delay(50); // debounce extra
+          return i;
+        }
       }
     }
   }
@@ -107,11 +130,17 @@ int waitForButton() {
 
 void flashLED(int index) {
   digitalWrite(ledPins[index], HIGH);
+  tone(buzzerPin, tones[index]);
   delay(300);
   digitalWrite(ledPins[index], LOW);
+  noTone(buzzerPin);
 }
 
 void gameOver() {
+    tone(buzzerPin, 150); // som grave
+    delay(800);
+    noTone(buzzerPin);
+
   for (int i = 0; i < 3; i++) {
     digitalWrite(ledPins[0], HIGH);
     digitalWrite(ledPins[1], HIGH);
@@ -124,11 +153,20 @@ void gameOver() {
   }
   sequenceLength = 1;
   generateSequence();
+  Serial.println(sequenceLength);
   displayLevel(sequenceLength); // mostra nível 1
   delay(1000);
 }
 
 void winGame() {
+    // Som de vitória
+  int melody[] = {523, 659, 784}; // C5, E5, G5
+  for (int i = 0; i < 3; i++) {
+    tone(buzzerPin, melody[i]);
+    delay(300);
+  }
+  noTone(buzzerPin);
+
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 3; j++) {
       digitalWrite(ledPins[j], HIGH);
@@ -151,4 +189,5 @@ void displayLevel(int level) {
   for (int i = 0; i < 4; i++) {
     digitalWrite(bcdPins[i], (value >> i) & 1);
   }
+  Serial.print(value);
 }
