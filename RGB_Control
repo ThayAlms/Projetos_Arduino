@@ -1,0 +1,59 @@
+// Pinos do LED RGB
+const int redPin = 9;
+const int greenPin = 10;
+const int bluePin = 11;
+
+// Botões
+const int btnR = 2;
+const int btnG = 3;
+const int btnB = 4;
+
+// Potenciômetro
+const int potPin = A0;
+
+// Estados das cores
+bool estadoR = false;
+bool estadoG = false;
+bool estadoB = false;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+
+  pinMode(btnR, INPUT_PULLUP);
+  pinMode(btnG, INPUT_PULLUP);
+  pinMode(btnB, INPUT_PULLUP);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Leitura do potenciômetro (para brilho)
+  int brilho = map(analogRead(potPin), 0, 1023, 0, 255);
+
+  // Detecta se botão foi pressionado
+  if (digitalRead(btnR) == HIGH) {
+    estadoR = !estadoR;
+    Serial.println("Botão Red");
+    
+    delay(200); // debounce simples
+  }
+  if (digitalRead(btnG) == HIGH) {
+    estadoG = !estadoG;
+    delay(200);
+    Serial.println("Botão Green");
+  }
+  if (digitalRead(btnB) == HIGH) {
+    estadoB = !estadoB;
+    Serial.println("Botão Blue");
+    delay(200);
+  }
+
+// Para ANÔDO COMUM: inverte o PWM
+analogWrite(redPin,   estadoR ? 255 - brilho : 255);
+analogWrite(greenPin, estadoG ? 255 - brilho : 255);
+analogWrite(bluePin,  estadoB ? 255 - brilho : 255);
+
+  delay(20);
+}
