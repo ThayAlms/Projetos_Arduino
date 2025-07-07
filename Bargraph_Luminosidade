@@ -1,0 +1,31 @@
+const int pinoLDR = A0;
+const int ledPins[10] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+void setup() {
+  for (int i = 0; i < 10; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+  Serial.begin(9600);  // Para debug se quiser
+}
+
+void loop() {
+  int valorLuz = analogRead(pinoLDR); // Valor entre 0 e 1023
+  Serial.print(valorLuz); // Visualizar no Monitor Serial
+  Serial.print("|");
+
+  // Mapeia a leitura para o número de LEDs a acender
+  int numLEDs = map(valorLuz, 0, 1023, 10 ,0);  
+  Serial.println(numLEDs);
+
+
+  // Acende os LEDs de acordo com o valor lido
+  for (int i = 0; i < 10; i++) {
+    if (i < numLEDs) {
+      digitalWrite(ledPins[i], HIGH);
+    } else {
+      digitalWrite(ledPins[i], LOW);
+    }
+  }
+
+  delay(100);
+}
