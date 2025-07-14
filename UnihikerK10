@@ -1,0 +1,86 @@
+/*!
+ * MindPlus
+ * esp32s3bit
+ *
+ */
+#include <ESP32Servo.h>
+#include <DFRobot_Iot.h>
+#include "unihiker_k10.h"
+#include "arduino_image_cache.h"
+
+// Dynamic variables
+String         mind_s_Awning_Switch;
+volatile float mind_n_temperature, mind_n_humidity, mind_n_soil_humidity, mind_n_light;
+// Function declaration
+void DF_Network_connection();
+void DF_Data_Acquisition_Trasmission();
+void obloqMqttEventTsiot47Desativa47Ativa32Toldo(String& message);
+void onButtonAPressed();
+// Static constants
+const String topics[5] = {"UMIDADE","LUZ","UMIDADE_SOLO","siot/Desativa/Ativa Toldo","TEMPERATURA"};
+// Create an object
+DFRobot_Iot  myIot;
+UNIHIKER_K10 k10;
+uint8_t      screen_dir=2;
+Servo        myservo_1;
+int          servoPin_1 = 1 ;
+
+
+// Main program start
+void setup() {
+	k10.begin();
+	k10.initScreen(screen_dir);
+	k10.creatCanvas();
+	ESP32PWM::allocateTimer(0);
+	ESP32PWM::allocateTimer(1);
+	ESP32PWM::allocateTimer(2);
+	ESP32PWM::allocateTimer(3);
+	myservo_1.setPeriodHertz(50);
+	myservo_1.attach(servoPin_1, 500, 2500);
+	myIot.setCustomMqttCallback(obloqMqttEventTsiot47Desativa47Ativa32Toldo, "siot/Desativa/Ativa Toldo");
+	k10.buttonA->setPressedCallback(onButtonAPressed);
+	DF_Network_connection();
+}
+void loop() {
+	DF_Data_Acquisition_Trasmission();
+}
+
+
+// Custom function
+void DF_Network_connection() {
+	myIot.wifiConnect("RoboCore", "robocore2534");
+	while (!myIot.wifiStatus()) {}
+	myIot.init("192.168.0.117","siot","6497350328406395","dfrobot", topics, 1883);
+	myIot.connect();
+	k10.canvas->updateCanvas();
+	myIot.subscribeTopic("siot/UMIDADE");
+	myIot.subscribeTopic("siot/TEMPERATURA");
+	myIot.subscribeTopic("siot/LUZ");
+	myIot.subscribeTopic("siot/Desativa/Ativa Toldo");
+	myIot.subscribeTopic("siot/UMIDADE_SOLO");
+	myservo_1.write(90);
+	k10.canvas->canvasClear();
+}
+void DF_Data_Acquisition_Trasmission() {
+	k10.canvas->canvasDrawBitmap(0,0,240,320,image_data1);
+	k10.canvas->canvasText(mind_n_temperature, 55, 80, 0x0000FF, k10.canvas->eCNAndENFont24, 50, false);
+	k10.canvas->canvasText(mind_n_humidity, 165, 80, 0x0000FF, k10.canvas->eCNAndENFont24, 50, false);
+	k10.canvas->canvasText(mind_n_soil_humidity, 55, 170, 0x0000FF, k10.canvas->eCNAndENFont24, 50, false);
+	k10.canvas->canvasText(mind_n_light, 165, 170, 0x0000FF, k10.canvas->eCNAndENFont24, 50, false);
+}
+
+// Event callback function
+void obloqMqttEventTsiot47Desativa47Ativa32Toldo(String& message) {
+	mind_s_Awning_Switch = message;
+}
+void onButtonAPressed() {
+	delay(100);
+	if (false) {
+		myIot.publish("siot/Desativa/Ativa Toldo", "ON");
+		myIot.publish("siot/Desativa/Ativa Toldo", "30", 1);
+	}
+	else {
+		myIot.publish("siot/Desativa/Ativa Toldo", "OFF", 1);
+		myIot.publish("siot/Desativa/Ativa Toldo", "0", 1);
+	}
+}
